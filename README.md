@@ -1,5 +1,5 @@
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&height=180&color=0:001F3F,50:0052A3,100:007ACC&text=Salesforce%20Lead%20Qualifier&fontColor=ffffff&fontSize=42&fontAlignY=38&desc=Hybrid%20B2B%20Lead%20Scoring%20%7C%20REST%20API%20%26%20Gemini&descAlignY=62&descSize=16" alt="Salesforce Lead Qualifier" />
+﻿<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=180&color=0:001F3F,50:0052A3,100:007ACC&text=Salesforce%20Lead%20Qualifier&fontColor=ffffff&fontSize=42&fontAlignY=38&desc=Hybrid%20B2B%20Lead%20Scoring%20%7C%20REST%20API%20and%20Gemini&descAlignY=62&descSize=16" alt="Salesforce Lead Qualifier" />
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
   <tr>
     <td width="50%" valign="top">
       <h3><img src="https://api.iconify.design/lucide/brain-circuit.svg?color=%23007ACC&width=22" alt="" /> Hybrid Intelligence</h3>
-      Explicit deterministic rules handle baseline scoring (0–100), while Gemini enriches leads with pain points, urgency, and executive summaries—falling back safely if the LLM is unavailable.
+      Explicit deterministic rules handle baseline scoring (0â€“100), while Gemini enriches leads with pain points, urgency, and executive summariesâ€”falling back safely if the LLM is unavailable.
     </td>
     <td width="50%" valign="top">
       <h3><img src="https://api.iconify.design/lucide/shield-check.svg?color=%23007ACC&width=22" alt="" /> Idempotent & Resilient</h3>
@@ -32,20 +32,20 @@
 
 ```text
 Salesforce Lead (SOQL Query / Webhook Payload)
-        │
-        ▼
+        â”‚
+        â–¼
   Pydantic Validation (LeadInput)
-        │
-        ▼
-  Deterministic Scoring Engine (0–100 -> Hot / Warm / Cold)
-        │
-        ▼
+        â”‚
+        â–¼
+  Deterministic Scoring Engine (0â€“100 -> Hot / Warm / Cold)
+        â”‚
+        â–¼
   Gemini Structured Enrichment (AILeadInsights + Safe Fallback)
-        │
-        ▼
-  Idempotency Check ──► Skip if Rating & Summary unchanged
-        │ (if changed)
-        ▼
+        â”‚
+        â–¼
+  Idempotency Check â”€â”€â–º Skip if Rating & Summary unchanged
+        â”‚ (if changed)
+        â–¼
   Salesforce REST PATCH (Updates Rating + Preserves Description)
 ```
 
@@ -116,3 +116,4 @@ docker run --env-file .env salesforce-lead-qualifier python -m src.main
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&height=110&section=footer&color=0:007ACC,100:001F3F&text=Built%20by%20Igor%20Henrique&fontColor=ffffff&fontSize=16&fontAlignY=45" alt="Footer" />
 </p>
+
