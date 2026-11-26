@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/igorhsouza/salesforce-lead-qualifier/actions/workflows/ci.yml"><img src="https://github.com/igorhsouza/salesforce-lead-qualifier/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/Python-3.12-007ACC?style=flat-square&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/Salesforce-00A1E0?style=flat-square&logo=salesforce&logoColor=white" alt="Salesforce" />
@@ -49,6 +50,97 @@ Salesforce Lead (SOQL Query / Webhook Payload)
   Salesforce REST PATCH (Updates Rating + Preserves Description)
 ```
 
+<h2 align="center"><img src="https://api.iconify.design/lucide/play-circle.svg?color=%23007ACC&width=26" alt="" /> Quick Demo (Input -> Output)</h2>
+
+**Request (`POST /qualify-lead`):**
+
+```json
+{
+  "id": "00QgK00000ZwndhUAB",
+  "name": "Ana Silva",
+  "company": "Acme Automacoes",
+  "email": "ana@acmeautomacoes.com.br",
+  "description": "We need urgent API integration and workflow automation for our sales team.",
+  "use_ai": true,
+  "sync_to_salesforce": true
+}
+```
+
+**Response (`200 OK`):**
+
+```json
+{
+  "qualification": {
+    "lead_id": "00QgK00000ZwndhUAB",
+    "score": 100,
+    "rating": "Hot",
+    "is_corporate_email": true,
+    "reasons": [
+      "Corporate email detected",
+      "Company provided (Acme Automacoes)",
+      "Detailed context in description",
+      "High-intent keywords found: api, automation, integration, urgent",
+      "AI score adjustment (+16)"
+    ],
+    "ai_insights": {
+      "score_delta": 16,
+      "pain_point": "Manual sales workflow bottlenecks requiring API integration",
+      "urgency": "High",
+      "executive_summary": "High-fit B2B prospect with corporate domain and urgent automation timeline."
+    },
+    "summary": "[Auto-Qualification] Ana Silva (Acme Automacoes) -> Hot (100/100)..."
+  },
+  "synced_to_salesforce": true,
+  "sync_status": "updated"
+}
+```
+
+<h2 align="center"><img src="https://api.iconify.design/lucide/sliders.svg?color=%23007ACC&width=26" alt="" /> Scoring Model & Thresholds</h2>
+
+The qualification engine computes a deterministic baseline score first, then applies an optional bounded adjustment from Gemini (`score` is always clamped between `0` and `100`):
+
+<table>
+  <tr>
+    <th>Signal / Criterion</th>
+    <th>Weight</th>
+    <th>Rule Logic</th>
+  </tr>
+  <tr>
+    <td>Baseline Score</td>
+    <td><code>+20</code></td>
+    <td>Starting score for every valid inbound lead.</td>
+  </tr>
+  <tr>
+    <td>Corporate Email Domain</td>
+    <td><code>+25</code></td>
+    <td>Awarded when domain is not a free provider (e.g. Gmail, Outlook, Yahoo).</td>
+  </tr>
+  <tr>
+    <td>Company Provided</td>
+    <td><code>+15</code></td>
+    <td>Awarded when <code>Company</code> field is populated.</td>
+  </tr>
+  <tr>
+    <td>Description Context</td>
+    <td><code>+15</code></td>
+    <td>Awarded when <code>Description</code> contains substantive context.</td>
+  </tr>
+  <tr>
+    <td>High-Intent Keywords</td>
+    <td><code>up to +25</code></td>
+    <td>Matches commercial/technical buying signals (e.g. <code>api</code>, <code>automation</code>, <code>integration</code>, <code>urgent</code>).</td>
+  </tr>
+  <tr>
+    <td>Gemini Semantic Adjustment</td>
+    <td><code>-15 to +20</code></td>
+    <td>Evaluates email-to-company alignment, pain point clarity, and urgency via structured schema.</td>
+  </tr>
+</table>
+
+- **`Hot` (`70 - 100`):** Immediate sales follow-up priority.
+- **`Warm` (`45 - 69`):** Qualified prospect for SDR nurturing.
+- **`Cold` (`0 - 44`):** Low intent or incomplete B2B profile.
+
 <h2 align="center"><img src="https://api.iconify.design/lucide/layers.svg?color=%23007ACC&width=26" alt="" /> Core Components</h2>
 
 <table>
@@ -85,17 +177,20 @@ Salesforce Lead (SOQL Query / Webhook Payload)
 <h2 align="center"><img src="https://api.iconify.design/lucide/terminal.svg?color=%23007ACC&width=26" alt="" /> Quickstart</h2>
 
 ```bash
-# 1. Clone and activate virtual environment
+# 1. Clone repository and create virtual environment
 git clone [https://github.com/igorhsouza/salesforce-lead-qualifier.git](https://github.com/igorhsouza/salesforce-lead-qualifier.git)
 cd salesforce-lead-qualifier
 python -m venv .venv
-.venv\Scripts\Activate.ps1   # Windows PowerShell
-pip install -r requirements.txt
 
-# 2. Configure credentials
+# Activate virtual environment:
+source .venv/bin/activate      # Linux / macOS
+.venv\Scripts\Activate.ps1     # Windows PowerShell
+
+# 2. Install dependencies and configure credentials
+pip install -r requirements.txt
 cp .env.example .env
 
-# 3. Run offline tests
+# 3. Run offline unit tests
 pytest
 
 # 4. Run batch qualification or start FastAPI server
@@ -103,7 +198,11 @@ python -m src.main
 uvicorn src.api:app --reload
 ```
 
-<h2 align="center"><img src="https://api.iconify.design/lucide/container.svg?color=%23007ACC&width=26" alt="" /> Docker Execution</h2>
+<h2 align="center"><img src="https://api.iconify.design/lucide/activity.svg?color=%23007ACC&width=26" alt="" /> Observability & Production Deployment</h2>
+
+- **Structured Logging:** Every module emits timestamped logs (`%(asctime)s | %(levelname)s | %(name)s | %(message)s`) tracking OAuth2 token acquisition, SOQL record counts, deterministic vs. AI score deltas, fallback warnings, and idempotent skips.
+- **Batch Mode (Cron / VPS / Cloud Run Jobs):** Schedule `python -m src.main` every 5-15 minutes. Because the runner checks existing `Rating` and `Description` state before issuing `PATCH` calls, repeated executions are safe and incur zero redundant API writes.
+- **Real-Time Mode (Cloud Run / Containerized VPS):** Deploy the Docker image (`uvicorn src.api:app --host 0.0.0.0 --port 8000`) behind an API gateway or reverse proxy and trigger `POST /qualify-lead` from a Salesforce Record-Triggered Flow (HTTP Callout) or an `n8n` webhook workflow.
 
 ```bash
 docker build -t salesforce-lead-qualifier .
