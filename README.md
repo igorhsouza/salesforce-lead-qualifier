@@ -95,6 +95,11 @@ Salesforce Lead (SOQL Query / Webhook Payload)
 }
 ```
 
+### OUTPUT EXAMPLE
+<img width="1120" height="141" alt="image" src="https://github.com/user-attachments/assets/48630ddd-d7bd-4ece-8437-4587ee5127c2" />
+
+
+
 <h2 align="center"><img src="https://api.iconify.design/lucide/sliders.svg?color=%23007ACC&width=26" alt="" /> Scoring Model & Thresholds</h2>
 
 The qualification engine computes a deterministic baseline score first, then applies an optional bounded adjustment from Gemini (`score` is always clamped between `0` and `100`):
