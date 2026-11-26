@@ -50,25 +50,25 @@ Salesforce Lead (SOQL Query / Webhook Payload)
   Salesforce REST PATCH (Updates Rating + Replaces Description cleanly)
 ```
 
-<h2 align="center"><img src="https://api.iconify.design/lucide/play-circle.svg?color=%23007ACC&width=26" alt="" /> Quick Demo (Input -> Output)</h2>
+<h2 align="center"><img src="https://api.iconify.design/lucide/play-circle.svg?color=%23007ACC&width=26" alt="" /> Quick Demo (Warm -> Hot via Gemini)</h2>
 
 **Request (`POST /qualify-lead`):**
 
 ```json
 {
   "id": "00QgK00000ZwndhUAB",
-  "name": "Ana Silva",
-  "company": "Acme Automacoes",
-  "email": "ana@acmeautomacoes.com.br",
-  "description": "We need urgent API integration and workflow automation for our sales team.",
+  "name": "Lucas Mendes",
+  "company": "Norte Logistica",
+  "email": "lucas.mendes@nortelogistica.com.br",
+  "description": "Need help replacing spreadsheets",
   "use_ai": true,
   "sync_to_salesforce": true
 }
 ```
 
 **Score Breakdown for this Example:**
-- Deterministic base: `20` (base) + `25` (corporate domain) + `15` (company) + `15` (description >= 25 chars) + `25` (4 matched keywords x 10, capped at 25) = **`100`**
-- AI semantic adjustment: `+16` (`100 + 16 = 116`, clamped to ceiling **`100`** -> **`Hot`**)
+- Deterministic rules: `20` (base) + `25` (corporate domain) + `15` (company) + `0` (description < 25 chars) + `0` (no exact high-intent keyword match) = **`60` (`Warm`)**
+- Gemini semantic adjustment: `+14` (`60 + 14 = 74` -> promotes lead from **`Warm`** to **`Hot`**)
 
 **Response (`200 OK`):**
 
@@ -76,32 +76,26 @@ Salesforce Lead (SOQL Query / Webhook Payload)
 {
   "qualification": {
     "lead_id": "00QgK00000ZwndhUAB",
-    "score": 100,
+    "score": 74,
     "rating": "Hot",
     "is_corporate_email": true,
     "reasons": [
       "Corporate email detected",
-      "Company provided (Acme Automacoes)",
-      "Detailed context in description",
-      "High-intent keywords found: api, automation, integration, urgent",
-      "AI score adjustment (+16)"
+      "Company provided (Norte Logistica)",
+      "AI score adjustment (+14)"
     ],
     "ai_insights": {
-      "score_delta": 16,
-      "pain_point": "Manual sales workflow bottlenecks requiring API integration",
+      "score_delta": 14,
+      "pain_point": "Operational bottleneck from manual spreadsheet tracking in logistics",
       "urgency": "High",
-      "executive_summary": "High-fit B2B prospect with corporate domain and urgent automation timeline."
+      "executive_summary": "Logistics company seeking to replace manual spreadsheets, indicating strong automation fit."
     },
-    "summary": "[Auto-Qualification] Ana Silva (Acme Automacoes) -> Hot (100/100)..."
+    "summary": "[Auto-Qualification] Lucas Mendes (Norte Logistica) -> Hot (74/100)..."
   },
   "synced_to_salesforce": true,
   "sync_status": "updated"
 }
 ```
-
-### OUTPUT EXAMPLE
-<img width="1146" height="141" alt="image" src="https://github.com/user-attachments/assets/bda0d5e4-d9cb-411e-a40a-8472a2e15d6e" />
-
 
 <h2 align="center"><img src="https://api.iconify.design/lucide/sliders.svg?color=%23007ACC&width=26" alt="" /> Scoring Model & Thresholds</h2>
 
