@@ -24,7 +24,7 @@
     </td>
     <td width="50%" valign="top">
       <h3><img src="https://api.iconify.design/lucide/shield-check.svg?color=%23007ACC&width=22" alt="" /> Idempotent & Resilient</h3>
-      Separates generated qualification summaries from original lead notes, skips redundant Salesforce <code>PATCH</code> calls, and retries transient failures with exponential backoff.
+      Parses out prior qualification blocks before re-evaluating, replaces the generated header cleanly without stacking duplicates, skips redundant Salesforce <code>PATCH</code> calls, and retries transient errors with exponential backoff.
     </td>
   </tr>
 </table>
@@ -35,7 +35,7 @@
 Salesforce Lead (SOQL Query / Webhook Payload)
         |
         v
-  Pydantic Validation (LeadInput)
+  Extract Original Description (strips prior [Auto-Qualification] block)
         |
         v
   Deterministic Scoring Engine (0-100 -> Hot / Warm / Cold)
@@ -44,10 +44,10 @@ Salesforce Lead (SOQL Query / Webhook Payload)
   Gemini Structured Enrichment (AILeadInsights + Safe Fallback)
         |
         v
-  Idempotency Check ---> Skip if Rating & Summary unchanged
+  Idempotency Check ---> Skip if Rating and Description unchanged
         | (if changed)
         v
-  Salesforce REST PATCH (Updates Rating + Preserves Description)
+  Salesforce REST PATCH (Updates Rating + Replaces Description cleanly)
 ```
 
 <h2 align="center"><img src="https://api.iconify.design/lucide/play-circle.svg?color=%23007ACC&width=26" alt="" /> Quick Demo (Input -> Output)</h2>
@@ -149,6 +149,12 @@ The qualification engine computes a deterministic baseline score first, then app
 - **`Warm` (`45 - 69`):** Qualified prospect for SDR nurturing.
 - **`Cold` (`0 - 44`):** Low intent or incomplete B2B profile.
 
+<h2 align="center"><img src="https://api.iconify.design/lucide/check-circle-2.svg?color=%23007ACC&width=26" alt="" /> AI Guardrails & Quality Evaluation</h2>
+
+- **Bounded Influence & Strict Schema:** Gemini responses are constrained to the `AILeadInsights` Pydantic schema (`score_delta` clamped to `-15..+20`, `urgency` restricted to `High | Medium | Low`). The LLM cannot override deterministic rules by more than 20 points or emit malformed free-form output.
+- **Re-execution Behavior (No Stacking):** On repeated runs, `extract_original_description()` splits on the `---\nPrevious Description:` delimiter, discards the previous `[Auto-Qualification]` header, and re-evaluates only the raw lead note. If the score or rating changes, the summary block is **replaced in place** rather than appended.
+- **Evaluation & Drift Detection:** Baseline scoring, AI schema parsing, and fallback paths are verified in CI via deterministic `pytest` fixtures. In production, model quality is monitored via fallback warning rates in logs and periodic audits comparing `score_delta` against actual CRM stage conversion (`Open` -> `Qualified`).
+
 <h2 align="center"><img src="https://api.iconify.design/lucide/layers.svg?color=%23007ACC&width=26" alt="" /> Core Components</h2>
 
 <table>
@@ -209,7 +215,7 @@ uvicorn src.api:app --reload
 <h2 align="center"><img src="https://api.iconify.design/lucide/activity.svg?color=%23007ACC&width=26" alt="" /> Observability & Production Deployment</h2>
 
 - **Structured Logging:** Every module emits timestamped logs (`%(asctime)s | %(levelname)s | %(name)s | %(message)s`) tracking OAuth2 token acquisition, SOQL record counts, deterministic vs. AI score deltas, fallback warnings, and idempotent skips.
-- **Batch Mode (Cron / VPS / Cloud Run Jobs):** Schedule `python -m src.main` every 5-15 minutes. Because the runner checks existing `Rating` and `Description` state before issuing `PATCH` calls, repeated executions are safe and incur zero redundant API writes.
+- **Batch Mode (Cron / VPS / Cloud Run Jobs):** Schedule `python -m src.main` every 5-15 minutes. Because the runner checks whether `Rating` and `Description` are unchanged before issuing `PATCH` calls, repeated executions are safe and incur zero redundant API writes.
 - **Real-Time Mode (Cloud Run / Containerized VPS):** Deploy the Docker image (`uvicorn src.api:app --host 0.0.0.0 --port 8000`) behind an API gateway or reverse proxy and trigger `POST /qualify-lead` from a Salesforce Record-Triggered Flow (HTTP Callout) or an `n8n` webhook workflow.
 
 ```bash
