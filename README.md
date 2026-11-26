@@ -99,6 +99,10 @@ Salesforce Lead (SOQL Query / Webhook Payload)
 }
 ```
 
+### OUTPUT EXAMPLE
+<img width="1146" height="141" alt="image" src="https://github.com/user-attachments/assets/bda0d5e4-d9cb-411e-a40a-8472a2e15d6e" />
+
+
 <h2 align="center"><img src="https://api.iconify.design/lucide/sliders.svg?color=%23007ACC&width=26" alt="" /> Scoring Model & Thresholds</h2>
 
 The qualification engine computes a deterministic baseline score first, then applies an optional bounded adjustment from Gemini (`score` is always clamped between `0` and `100`):
@@ -182,7 +186,7 @@ The qualification engine computes a deterministic baseline score first, then app
 
 ```bash
 # 1. Clone repository and create virtual environment
-git clone [https://github.com/igorhsouza/salesforce-lead-qualifier.git](https://github.com/igorhsouza/salesforce-lead-qualifier.git)
+git clone "https://github.com/igorhsouza/salesforce-lead-qualifier.git"
 cd salesforce-lead-qualifier
 python -m venv .venv
 
