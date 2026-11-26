@@ -66,6 +66,10 @@ Salesforce Lead (SOQL Query / Webhook Payload)
 }
 ```
 
+**Score Breakdown for this Example:**
+- Deterministic base: `20` (base) + `25` (corporate domain) + `15` (company) + `15` (description >= 25 chars) + `25` (4 matched keywords x 10, capped at 25) = **`100`**
+- AI semantic adjustment: `+16` (`100 + 16 = 116`, clamped to ceiling **`100`** -> **`Hot`**)
+
 **Response (`200 OK`):**
 
 ```json
@@ -95,11 +99,6 @@ Salesforce Lead (SOQL Query / Webhook Payload)
 }
 ```
 
-### OUTPUT EXAMPLE
-<img width="1120" height="141" alt="image" src="https://github.com/user-attachments/assets/48630ddd-d7bd-4ece-8437-4587ee5127c2" />
-
-
-
 <h2 align="center"><img src="https://api.iconify.design/lucide/sliders.svg?color=%23007ACC&width=26" alt="" /> Scoring Model & Thresholds</h2>
 
 The qualification engine computes a deterministic baseline score first, then applies an optional bounded adjustment from Gemini (`score` is always clamped between `0` and `100`):
@@ -128,12 +127,12 @@ The qualification engine computes a deterministic baseline score first, then app
   <tr>
     <td>Description Context</td>
     <td><code>+15</code></td>
-    <td>Awarded when <code>Description</code> contains substantive context.</td>
+    <td>Awarded when <code>Description</code> has at least 25 characters (<code>len(desc) >= 25</code>).</td>
   </tr>
   <tr>
     <td>High-Intent Keywords</td>
-    <td><code>up to +25</code></td>
-    <td>Matches commercial/technical buying signals (e.g. <code>api</code>, <code>automation</code>, <code>integration</code>, <code>urgent</code>).</td>
+    <td><code>+10 each (cap +25)</code></td>
+    <td><code>min(matches * 10, 25)</code> for buying signals (e.g. <code>api</code>, <code>automation</code>, <code>integration</code>, <code>urgent</code>).</td>
   </tr>
   <tr>
     <td>Gemini Semantic Adjustment</td>
