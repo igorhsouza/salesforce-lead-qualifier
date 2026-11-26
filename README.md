@@ -149,11 +149,11 @@ The qualification engine computes a deterministic baseline score first, then app
 - **`Warm` (`45 - 69`):** Qualified prospect for SDR nurturing.
 - **`Cold` (`0 - 44`):** Low intent or incomplete B2B profile.
 
-<h2 align="center"><img src="https://api.iconify.design/lucide/check-circle-2.svg?color=%23007ACC&width=26" alt="" /> AI Guardrails & Quality Evaluation</h2>
+<h2 align="center"><img src="https://api.iconify.design/lucide/check-circle-2.svg?color=%23007ACC&width=26" alt="" /> AI Guardrails & Evaluation</h2>
 
-- **Bounded Influence & Strict Schema:** Gemini responses are constrained to the `AILeadInsights` Pydantic schema (`score_delta` clamped to `-15..+20`, `urgency` restricted to `High | Medium | Low`). The LLM cannot override deterministic rules by more than 20 points or emit malformed free-form output.
-- **Re-execution Behavior (No Stacking):** On repeated runs, `extract_original_description()` splits on the `---\nPrevious Description:` delimiter, discards the previous `[Auto-Qualification]` header, and re-evaluates only the raw lead note. If the score or rating changes, the summary block is **replaced in place** rather than appended.
-- **Evaluation & Drift Detection:** Baseline scoring, AI schema parsing, and fallback paths are verified in CI via deterministic `pytest` fixtures. In production, model quality is monitored via fallback warning rates in logs and periodic audits comparing `score_delta` against actual CRM stage conversion (`Open` -> `Qualified`).
+- **Bounded Influence & Strict Schema:** Gemini outputs are enforced via the `AILeadInsights` Pydantic schema (`score_delta` constrained to `-15..+20`, `urgency` restricted to `Literal["High", "Medium", "Low"]`). The LLM cannot shift the score by more than 20 points or return unstructured text.
+- **Re-execution Behavior (No Stacking):** In batch mode (`src/main.py`), `extract_original_description()` splits on the `---\nPrevious Description:` delimiter, discards the prior `[Auto-Qualification]` block, and re-evaluates only the raw lead note. When a lead rating or summary changes, the block is **replaced in place** rather than appended.
+- **Current Verification & Planned Evals:** Today, baseline scoring rules, schema parsing, and fallback paths are verified in CI via deterministic `pytest` fixtures, alongside runtime `WARNING` logs whenever Gemini falls back to rule-only scoring. **Planned next step:** add a golden dataset evaluation benchmark and periodic audits comparing `score_delta` against actual CRM stage conversion (`Open` -> `Qualified`).
 
 <h2 align="center"><img src="https://api.iconify.design/lucide/layers.svg?color=%23007ACC&width=26" alt="" /> Core Components</h2>
 
@@ -192,7 +192,7 @@ The qualification engine computes a deterministic baseline score first, then app
 
 ```bash
 # 1. Clone repository and create virtual environment
-git clone "https://github.com/igorhsouza/salesforce-lead-qualifier.git"
+git clone https://github.com/igorhsouza/salesforce-lead-qualifier.git
 cd salesforce-lead-qualifier
 python -m venv .venv
 
